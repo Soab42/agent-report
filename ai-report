@@ -4,19 +4,76 @@
 #   ai-report                 # build report in the current directory and open it
 #   ai-report -o ~/foo.html   # custom output path
 #   ai-report --no-open       # build but don't open in a browser
-#   ai-report --today         # any flag the analyzer accepts is passed through
-#   ai-report --help          # show the analyzer's own options
+#   ai-report --no-claude     # exclude Claude sources (any analyzer flag works)
+#   ai-report --update        # re-download the analyzer from GitHub
+#   ai-report --help          # show this script's help
 #
+# The analyzer script (claude_analyzer.py) is fetched on first run from:
+#   https://raw.githubusercontent.com/Soab42/agent-report/main/claude_analyzer.py
+# and cached at ~/.local/share/agent-report/ for offline reuse.
 # Extra flags are forwarded verbatim to claude_analyzer.py.
+# Time-range filtering (Today / Week / Month) lives in the HTML dashboard.
+
 set -euo pipefail
 
-SCRIPT="/home/soab/working/personal/ailense/claude_analyzer.py"
+REPO_URL="https://raw.githubusercontent.com/Soab42/agent-report/main"
+INSTALL_DIR="${AI_REPORT_DIR:-$HOME/.local/share/agent-report}"
+ANALYZER="$INSTALL_DIR/claude_analyzer.py"
+MIN_PYTHON_MAJOR=3
+MIN_PYTHON_MINOR=8
 
-if [[ ! -f "$SCRIPT" ]]; then
-  echo "ai-report: analyzer not found at $SCRIPT" >&2
-  echo "  (edit the SCRIPT path in $(command -v ai-report) if you moved the repo)" >&2
-  exit 1
-fi
+log()  { printf '%s\n' "$*" >&2; }
+die()  { log "ai-report: $*"; exit 1; }
+
+# ── 1. Find a usable python3 ────────────────────────────────────────────────
+pick_python() {
+  if command -v python3 >/dev/null 2>&1; then
+    python3 -c "import sys; sys.exit(0 if sys.version_info >= ($MIN_PYTHON_MAJOR, $MIN_PYTHON_MINOR) else 1)" \
+      && { echo python3; return; }
+  fi
+  if command -v python >/dev/null 2>&1; then
+    python -c "import sys; sys.exit(0 if sys.version_info >= ($MIN_PYTHON_MAJOR, $MIN_PYTHON_MINOR) else 1)" \
+      && { echo python; return; }
+  fi
+  die "python >= $MIN_PYTHON_MAJOR.$MIN_PYTHON_MINOR not found. Install Python first."
+}
+
+# ── 2. Ensure the analyzer script is available locally ──────────────────────
+fetch_analyzer() {
+  mkdir -p "$INSTALL_DIR"
+  if [[ -f "$ANALYZER" && "${1:-}" != "--force" ]]; then
+    echo "$ANALYZER"
+    return
+  fi
+  log "→ fetching claude_analyzer.py from GitHub…"
+  local url="$REPO_URL/claude_analyzer.py"
+  local tmp="$ANALYZER.tmp"
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL --retry 3 -o "$tmp" "$url" \
+      || die "download failed: $url"
+  elif command -v wget >/dev/null 2>&1; then
+    wget -q -O "$tmp" "$url" \
+      || die "download failed: $url"
+  else
+    die "neither curl nor wget found — install one or set AI_REPORT_DIR to a dir containing claude_analyzer.py"
+  fi
+  # sanity check: must look like a Python file with our parser
+  if ! head -1 "$tmp" | grep -q "python"; then
+    rm -f "$tmp"
+    die "downloaded file doesn't look like a Python script — aborting"
+  fi
+  if ! grep -q "parse_puku\|parse_claude" "$tmp"; then
+    rm -f "$tmp"
+    die "downloaded file isn't the expected analyzer — aborting"
+  fi
+  mv "$tmp" "$ANALYZER"
+  log "  cached at $ANALYZER"
+  echo "$ANALYZER"
+}
+
+# ── 3. Parse flags ──────────────────────────────────────────────────────────
+PY=$(pick_python)
+[[ "${1:-}" == "--update" ]] && { fetch_analyzer --force; exit 0; }
 
 open=1
 out=""
@@ -26,9 +83,52 @@ while [[ $# -gt 0 ]]; do
     --no-open)      open=0; shift ;;
     -o|--output)    out="${2:-}"; args+=("$1" "${2:-}"); shift 2 ;;
     -o=*|--output=*) out="${1#*=}"; args+=("$1"); shift ;;
+    -h|--help)
+      cat <<'USAGE'
+ai-report — generate the AI Tools usage dashboard
+
+USAGE:
+  ai-report [OPTIONS]
+
+OPTIONS:
+  -o, --output FILE    Write the report to FILE (default: ./ai-report.html)
+  --no-open            Build the report but don't open it in a browser
+  --update             Re-download the analyzer script from GitHub
+  -h, --help           Show this help
+
+Any other flag is forwarded to claude_analyzer.py.  See:
+  python3 claude_analyzer.py --help
+
+EXAMPLES:
+  ai-report                       # scan, build ai-report.html, open it
+  ai-report -o ~/dash.html        # custom output path
+  ai-report --no-open             # build but don't open in a browser
+  ai-report --no-claude           # exclude Claude sources
+  ai-report --chatgpt ~/Downloads/conversations.json
+
+Time-range filtering (Today / Week / Month / All) happens inside the HTML
+dashboard after the report is generated — there is no CLI flag for it.
+
+SCANNED LOCATIONS:
+  Claude Desktop   ~/.config/Claude/claude-code-sessions/
+                   ~/.config/Claude/local-agent-mode-sessions/
+  Claude Code CLI  ~/.claude/projects/
+  Gemini CLI       ~/.gemini/tmp/<project>/chats/
+  Antigravity IDE  ~/.gemini/antigravity-ide/brain/
+  Antigravity CLI  ~/.gemini/antigravity-cli/brain/
+  Codex CLI        ~/.codex/sessions/
+  Puku CLI         ~/.puku-cli/projects/
+
+REQUIREMENTS:
+  Python >= 3.8   (no extra packages — stdlib only)
+USAGE
+      exit 0 ;;
     *)              args+=("$1"); shift ;;
   esac
 done
+
+# ── 4. Make sure the analyzer exists (fetch on first run) ───────────────────
+ANALYZER=$(fetch_analyzer)
 
 # Default output: ai-report.html in the current directory.
 if [[ -z "$out" ]]; then
@@ -36,8 +136,14 @@ if [[ -z "$out" ]]; then
   args+=(-o "$out")
 fi
 
-python3 "$SCRIPT" "${args[@]}"
+# ── 5. Run it ───────────────────────────────────────────────────────────────
+log "  scanning ~/.claude  ~/.gemini  ~/.codex  ~/.puku-cli/projects  ..."
+"$PY" "$ANALYZER" "${args[@]}"
 
-if [[ "$open" -eq 1 ]] && command -v xdg-open >/dev/null 2>&1; then
-  xdg-open "$out" >/dev/null 2>&1 || true
+if [[ "$open" -eq 1 ]]; then
+  if command -v xdg-open >/dev/null 2>&1; then
+    xdg-open "$out" >/dev/null 2>&1 || true
+  elif command -v open    >/dev/null 2>&1; then
+    open    "$out" >/dev/null 2>&1 || true   # macOS
+  fi
 fi
