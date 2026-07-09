@@ -4,6 +4,11 @@
 > Antigravity, ChatGPT exports, Codex CLI, and Puku CLI — from anywhere on your
 > machine. No clones, no dependencies, just a one-liner.
 
+```bash
+# zero-install one-liner (npx-style):
+bash <(curl -fsSL https://raw.githubusercontent.com/Soab42/agent-report/main/ai-report)
+```
+
 ![dashboard preview](https://placehold.co/1200x600/1a1d2e/6c63ff?text=ai-report+dashboard)
 
 ---
@@ -50,6 +55,43 @@ cache and work offline. Re-fetch with `ai-report --update`.
 
 **That's it** — no `git clone`, no `pip install`, no Python packages (stdlib only).
 Requires Python ≥ 3.8.
+
+---
+
+## npx-style one-liner (zero install)
+
+If you don't want to install anything — not even `ai-report` — run it directly
+from GitHub. The wrapper script is small, pure bash, and safe to pipe from
+`raw.githubusercontent.com`. Any arguments after the script path are forwarded
+to it normally.
+
+```bash
+# default: scan everything, write ai-report.html, open it
+bash <(curl -fsSL https://raw.githubusercontent.com/Soab42/agent-report/main/ai-report)
+
+# custom output, no auto-open
+bash <(curl -fsSL https://raw.githubusercontent.com/Soab42/agent-report/main/ai-report) \
+  -o ~/dash.html --no-open
+
+# only Puku CLI
+bash <(curl -fsSL https://raw.githubusercontent.com/Soab42/agent-report/main/ai-report) \
+  --no-claude --no-gemini --no-antigravity --no-codex
+
+# pin to a specific tag/commit (immutable, reproducible)
+bash <(curl -fsSL https://raw.githubusercontent.com/Soab42/agent-report/v1.0.0/ai-report)
+```
+
+What happens under the hood:
+
+1. `curl` downloads `ai-report` (≈ 5 KB) into a file-descriptor bash is reading from
+2. The script then downloads `claude_analyzer.py` (≈ 80 KB) into
+   `~/.local/share/agent-report/` — your only on-disk side effect
+3. Python runs the analyzer, writes `ai-report.html` in the current directory,
+   and (unless `--no-open`) launches it in your browser
+4. Nothing else is installed, nothing is added to PATH
+
+This is the same pattern as `npx github:owner/repo`: no install, no clone,
+just one command. The cache means subsequent runs are offline.
 
 ---
 
