@@ -14,8 +14,8 @@ let ALL_SESSIONS = [];
 let SCAN_INFO = {};
 let MEMORY = {};
 let SETTINGS = [];
-let SRC_COLORS = SNAPSHOT_COLORS || {};
-let SRC_LABELS = SNAPSHOT_LABELS || {};
+let SRC_COLORS = SNAPSHOT_COLORS || window.SOURCE_COLORS || {};
+let SRC_LABELS = SNAPSHOT_LABELS || window.SOURCE_LABELS || {};
 let GENERATED_AT = '—';
 let TOTAL_EV = 0;
 
