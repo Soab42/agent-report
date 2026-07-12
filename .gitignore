@@ -1,0 +1,9 @@
+node_modules/
+*.log
+.env
+dist/
+.DS_Store
+report.html
+report-*.html
+ai-report*.html
+*.tmp

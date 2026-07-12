@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>AI Tools Analyzer</title>
+<link rel="stylesheet" href="/styles.css">
+<script src="/chart.umd.min.js"></script>
+<style>
+  /* Tiny loading screen while data arrives */
+  #boot { display:flex; align-items:center; justify-content:center; height:60vh; color:var(--mt); }
+  #boot.hidden { display:none; }
+</style>
+</head>
+<body>
+
+<div id="boot">Loading dashboard…</div>
+
+<main id="app" style="display:none">
+
+<header>
+  <div>
+    <h1><span class="brand">AI Tools</span> Analyzer</h1>
+    <div class="subtitle">Claude &nbsp;·&nbsp; Gemini CLI &nbsp;·&nbsp; Antigravity &nbsp;·&nbsp; ChatGPT &nbsp;·&nbsp; Codex &nbsp;·&nbsp; Puku CLI</div>
+  </div>
+  <div class="gen">
+    Generated: <span id="gen-ts">—</span><br>
+    <span id="gen-ev">—</span> total events &nbsp;
+    <span id="live-pill" class="live">LIVE</span>
+  </div>
+</header>
+
+<div class="fbar">
+  <div style="display:flex;align-items:center;gap:6px">
+    <span class="flbl">Period</span>
+    <button class="pb" onclick="setPeriod('today',this)">Today</button>
+    <button class="pb" onclick="setPeriod('week',this)">This Week</button>
+    <button class="pb" onclick="setPeriod('month',this)">This Month</button>
+    <button class="pb active" onclick="setPeriod('all',this)">All Time</button>
+    <span class="prlbl" id="pr"></span>
+  </div>
+  <div class="div"></div>
+  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+    <span class="flbl">Source</span>
+    <button class="src-btn all-src active" onclick="setSrc('all',this)">All</button>
+    <span id="src-btns"></span>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="kpi-grid">
+    <div class="kpi ca"><div class="kl">Sessions</div><div class="kv" id="k0">—</div><div class="ks">Conversations</div></div>
+    <div class="kpi"><div class="kl">User Messages</div><div class="kv" id="k1">—</div><div class="ks">Prompts sent</div></div>
+    <div class="kpi"><div class="kl">AI Responses</div><div class="kv" id="k2">—</div><div class="ks">AI turns</div></div>
+    <div class="kpi cg"><div class="kl">Tool Calls</div><div class="kv" id="k3">—</div><div class="ks" id="k3s">unique tools</div></div>
+    <div class="kpi cgo"><div class="kl">Output Volume</div><div class="kv" id="k4">—</div><div class="ks">chars generated</div></div>
+    <div class="kpi cp"><div class="kl">Thinking Blocks</div><div class="kv" id="k5">—</div><div class="ks">Claude extended</div></div>
+    <div class="kpi"><div class="kl">Active Days</div><div class="kv" id="k6">—</div><div class="ks">Days with usage</div></div>
+    <div class="kpi"><div class="kl">Projects</div><div class="kv" id="k7">—</div><div class="ks">Unique dirs</div></div>
+    <div class="kpi cb"><div class="kl">Input Tokens</div><div class="kv" id="k8">—</div><div class="ks" id="k8s">cache —%</div></div>
+    <div class="kpi ct"><div class="kl">Output Tokens</div><div class="kv" id="k9">—</div><div class="ks">Claude only</div></div>
+    <div class="kpi"><div class="kl">Avg Msg Length</div><div class="kv" id="k10">—</div><div class="ks">chars/prompt</div></div>
+    <div class="kpi"><div class="kl">Memory Files</div><div class="kv" id="k11">—</div><div class="ks">Saved</div></div>
+  </div>
+
+  <div class="src-chips" id="chips"></div>
+
+  <div class="tabs">
+    <button class="tb active" onclick="showTab('ov',this)">Overview</button>
+    <button class="tb" onclick="showTab('tl',this)">Tools &amp; Models</button>
+    <button class="tb" onclick="showTab('cost',this)">Cost &amp; Cache</button>
+    <button class="tb" onclick="showTab('pj',this)">Projects</button>
+    <button class="tb" onclick="showTab('sv',this)">Sessions</button>
+    <button class="tb" onclick="showTab('mv',this)">Memory</button>
+    <button class="tb" onclick="showTab('st',this)">Settings &amp; Info</button>
+  </div>
+
+  <!-- OVERVIEW -->
+  <div id="tab-ov" class="tp active">
+    <div class="g1"><div class="card"><h3>Activity Timeline</h3><canvas id="ch-tl"></canvas></div></div>
+    <div class="g2">
+      <div class="card"><h3>Activity by Hour</h3><div class="hm" id="hm"></div></div>
+      <div class="card"><h3>Day of Week</h3><canvas id="ch-wd"></canvas></div>
+    </div>
+    <div class="g2">
+      <div class="card"><h3>Source Breakdown</h3><canvas id="ch-src"></canvas></div>
+      <div class="card"><h3>Top Directories</h3>
+        <div class="tw"><table class="dt"><thead><tr><th>Directory</th><th>Sessions</th></tr></thead>
+        <tbody id="proj-body"></tbody></table></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOOLS & MODELS -->
+  <div id="tab-tl" class="tp">
+    <div class="g2">
+      <div class="card"><h3>Top Tools</h3><canvas id="ch-tools"></canvas></div>
+      <div class="card"><h3>Models Used</h3><canvas id="ch-models"></canvas></div>
+    </div>
+    <div class="g2">
+      <div class="card"><h3>Entrypoints</h3><canvas id="ch-ep"></canvas></div>
+      <div class="card" style="display:flex;flex-direction:column;height:480px;overflow:hidden">
+        <h3 style="flex-shrink:0">All Tools</h3>
+        <div class="tw" style="flex:1;overflow-y:auto;min-height:0">
+          <table class="dt"><thead><tr><th>Tool</th><th>Calls</th></tr></thead>
+          <tbody id="tools-body"></tbody></table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COST & CACHE -->
+  <div id="tab-cost" class="tp">
+    <div class="kpi-grid">
+      <div class="kpi cgo"><div class="kl">Est. Cost</div><div class="kv" id="c0">—</div><div class="ks">what you paid</div></div>
+      <div class="kpi cg"><div class="kl">Cache Savings</div><div class="kv" id="c1">—</div><div class="ks" id="c1s">vs no cache</div></div>
+      <div class="kpi cb"><div class="kl">Cost w/o Cache</div><div class="kv" id="c2">—</div><div class="ks">same volume, uncached</div></div>
+      <div class="kpi ca"><div class="kl">Cache Hit Rate</div><div class="kv" id="c3">—</div><div class="ks" id="c3s">read share of input</div></div>
+      <div class="kpi ct"><div class="kl">Cache Read</div><div class="kv" id="c4">—</div><div class="ks">tokens served</div></div>
+      <div class="kpi cp"><div class="kl">Cache Write</div><div class="kv" id="c5">—</div><div class="ks">tokens written</div></div>
+    </div>
+    <div class="g2">
+      <div class="card"><h3>Daily Cost (USD)</h3><canvas id="ch-dcost"></canvas></div>
+      <div class="card"><h3>Cost by Model (USD)</h3><canvas id="ch-mcost"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Cost by Model — first-party pricing</h3>
+      <div class="tw"><table class="dt">
+        <thead><tr><th>Model</th><th>Input</th><th>Output</th><th>Cache Read</th><th>Cache Write</th><th>Est. Cost</th></tr></thead>
+        <tbody id="mcost-body"></tbody>
+      </table></div>
+      <p class="ks" style="margin-top:8px">Rates: first-party Anthropic API, USD per 1M tokens. Cache read = 0.1× input, cache write = 1.25× input (5-min TTL). Non-Claude tools are excluded (they log characters, not priced tokens).</p>
+    </div>
+  </div>
+
+  <!-- PROJECTS -->
+  <div id="tab-pj" class="tp">
+    <div class="pj-layout">
+      <div class="pj-left">
+        <div class="card">
+          <h3 style="flex-shrink:0">Project Activity</h3>
+          <input id="pf" type="text" placeholder="Filter projects…" oninput="filterProj()" style="flex-shrink:0">
+          <div class="tw">
+            <table class="dt">
+              <thead><tr><th>Project</th><th>Msgs</th><th>Sess</th><th>Last Active</th></tr></thead>
+              <tbody id="projects-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="pj-right" id="pj-right">
+        <div class="sess-detail-panel">
+          <div class="sdh">
+            <h4 id="sess-detail-title">Sessions</h4>
+            <button onclick="closeSessDetail()">✕</button>
+          </div>
+          <div class="tw">
+            <table class="dt">
+              <thead><tr><th>Title</th><th>Msgs</th><th>In</th><th>Out</th><th>Cost</th><th>Started</th><th>Last Active</th></tr></thead>
+              <tbody id="sess-detail-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SESSIONS -->
+  <div id="tab-sv" class="tp">
+    <div class="card" style="display:flex;flex-direction:column;height:640px;overflow:hidden">
+      <h3 style="flex-shrink:0">Sessions</h3>
+      <input id="ss" type="text" placeholder="Filter by topic, model, tool, directory…" oninput="filterTbl()" style="flex-shrink:0">
+      <div class="tw" style="flex:1;overflow-y:auto;min-height:0">
+        <table class="dt">
+          <thead><tr><th>Source</th><th>Started</th><th>Topic / Title</th><th>U/AI</th>
+            <th>Volume</th><th>Duration</th><th>Model</th><th>Directory</th></tr></thead>
+          <tbody id="sess-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MEMORY -->
+  <div id="tab-mv" class="tp">
+    <div class="card"><h3>Memory Files</h3><div id="mem-body">Loading…</div></div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="tab-st" class="tp">
+    <div class="g2">
+      <div class="card"><h3>Settings Files</h3><div id="settings-body">Loading…</div></div>
+      <div class="card"><h3>Scan Summary</h3>
+        <table class="dt"><thead><tr><th>Source</th><th>Data</th><th>Path</th></tr></thead>
+        <tbody id="scan-body"></tbody></table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</main>
+
+<!-- MyAgent panel (slide-up) -->
+<div id="agent-panel" style="display:none;position:fixed;bottom:0;left:0;right:0;max-height:50vh;background:var(--s1);border-top:1px solid var(--bd);padding:14px 20px;z-index:100;box-shadow:0 -10px 30px rgba(0,0,0,.5)">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+    <strong>MyAgent (Claude)</strong>
+    <button onclick="document.getElementById('agent-panel').style.display='none'" style="background:transparent;border:1px solid var(--bd);color:var(--mt);padding:2px 9px;border-radius:5px;cursor:pointer">✕</button>
+  </div>
+  <div id="agent-log" style="font-family:monospace;font-size:12px;max-height:30vh;overflow-y:auto;background:var(--s2);padding:10px;border-radius:6px;margin-bottom:8px;color:var(--tx);white-space:pre-wrap">Type a task and press Enter…</div>
+  <form id="agent-form" style="display:flex;gap:8px" onsubmit="return agentSend(event)">
+    <input id="agent-input" type="text" placeholder="Ask Claude something…" style="flex:1;padding:7px 12px;border-radius:7px;border:1px solid var(--bd);background:var(--s2);color:var(--tx);font-size:13px">
+    <button type="submit" style="padding:7px 16px;border-radius:7px;border:1px solid var(--acc);background:var(--acc);color:#fff;cursor:pointer;font-weight:600">Send</button>
+  </form>
+</div>
+<button id="agent-toggle" onclick="document.getElementById('agent-panel').style.display='block';this.style.display='none'" style="position:fixed;bottom:16px;right:16px;padding:8px 14px;border-radius:20px;border:none;background:var(--acc);color:#fff;cursor:pointer;font-weight:600;box-shadow:0 4px 14px rgba(0,0,0,.4);z-index:99">💬 Ask MyAgent</button>
+
+<script src="/app.js" defer></script>
+</body>
+</html>

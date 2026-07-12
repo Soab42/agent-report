@@ -1,0 +1,148 @@
+# AI Tools Analyzer — Node.js
+
+Unified dashboard for analyzing AI conversation history across multiple tools:
+
+- **Claude Desktop** (Cowork) + **Claude Code CLI**
+- **Gemini CLI**
+- **Antigravity IDE + CLI**
+- **ChatGPT** exports
+- **Codex CLI**
+- **Puku CLI**
+
+Plus a built-in **MyAgent** server: an Anthropic-API-powered CLI agent with prompt caching and tool execution.
+
+This is a Node.js rewrite of the original Python `claude_analyzer.py` + `myagent.py`. Same data, same dashboard, but:
+
+- Serves a live dashboard on `http://localhost:4310` (auto-refreshing via SSE)
+- Exposes all data as JSON APIs (`/api/kpis`, `/api/sessions`, `/api/cost`, …)
+- File watcher re-scans source folders whenever you start a new conversation
+- Can also emit a self-contained snapshot HTML (`--snapshot`)
+
+---
+
+## Quick start
+
+```bash
+git clone <this-repo>
+cd <this-repo>
+npm install
+cp .env.example .env             # add your ANTHROPIC_API_KEY (optional)
+npm start                        # or: node src/index.js
+```
+
+Then open <http://localhost:4310>.
+
+For a single offline HTML file (no server):
+
+```bash
+node src/index.js --snapshot report.html
+xdg-open report.html             # or just open in any browser
+```
+
+---
+
+## What it scans
+
+The parser auto-detects these paths on your machine:
+
+| Source | Default paths |
+|---|---|
+| Claude Desktop | `~/.config/Claude/claude-code-sessions/`, `~/.config/Claude/local-agent-mode-sessions/` |
+| Claude Code CLI | `~/.claude/projects/` (fallback `~/.claude/`) |
+| Gemini CLI | `~/.gemini/tmp/*/chats/session-*.jsonl` |
+| Antigravity IDE + CLI | `~/.gemini/antigravity-{ide,cli}/brain/<convId>/.system_generated/logs/transcript.jsonl` |
+| ChatGPT export | `~/Downloads/conversations.json`, `~/Desktop/conversations.json`, `~/Documents/conversations.json` (or pass `--chatgpt <file>`) |
+| Codex CLI | `~/.codex/sessions/<YYYY>/<MM>/<DD>/rollout-*.jsonl` |
+| Puku CLI | `~/.puku-cli/projects/**/*.jsonl` |
+| Memory files | `*.md` with `type: user|feedback|project|reference` frontmatter under Claude/Codex roots |
+| Settings | `settings.json`, `settings.local.json`, `.claude.json` |
+
+Disable a source with `--no-claude`, `--no-gemini`, `--no-antigravity`, `--no-codex`, or `--no-puku`.
+
+---
+
+## CLI flags
+
+```text
+node src/index.js                       # start server on $PORT or 4310
+node src/index.js --port 8080           # custom port
+node src/index.js --snapshot r.html     # write self-contained HTML report, exit
+node src/index.js --no-watch            # disable file watcher
+node src/index.js --verbose             # verbose source listing
+```
+
+---
+
+## HTTP API
+
+All endpoints accept `?source=<claude|gemini|antigravity|chatgpt|codex|puku>` and `?period=<today|week|month|all>`.
+
+| Endpoint | Description |
+|---|---|
+| `GET /` | Dashboard HTML |
+| `GET /api/scan` | Per-source scan info (events, sessions, path) |
+| `GET /api/kpis` | Aggregate KPIs |
+| `GET /api/sessions?limit=&offset=` | Paginated session list |
+| `GET /api/sessions/:id` | Full session detail |
+| `GET /api/events` | Raw event list |
+| `GET /api/cost` | Cost breakdown by model and day |
+| `GET /api/projects` | Project activity |
+| `GET /api/top` | Top tools/models/projects |
+| `GET /api/activity` | Timeline + hourly + weekday |
+| `GET /api/memory` | Memory files |
+| `GET /api/settings` | Settings files |
+| `GET /api/stream` | Server-Sent Events (live updates) |
+| `POST /api/agent` | `{task, model?, useTools?}` → run MyAgent once |
+| `POST /api/agent/stream` | Same, with SSE stream |
+
+### Example
+
+```bash
+curl localhost:4310/api/kpis?source=claude&period=month | jq
+curl -X POST localhost:4310/api/agent -H 'Content-Type: application/json' \
+     -d '{"task":"list the files in /tmp"}'
+```
+
+---
+
+## Pricing
+
+Hard-coded first-party Anthropic rates (USD per 1M tokens). Edit `src/pricing.js` and `public/app.js` (search `RATES`) to customize. Cache reads = 0.1× input, cache writes = 1.25× input (5-min TTL). Non-Claude tools are excluded from cost (they log characters, not priced tokens).
+
+---
+
+## How it works
+
+```
+src/
+├── index.js              # Express server + file watcher + snapshot mode
+├── parsers/              # one parser per source (claude.js, gemini.js, …)
+├── routes/api.js         # JSON API endpoints
+├── routes/agent.js       # POST /api/agent
+├── routes/html.js        # static dashboard
+├── agent/                # MyAgent — Claude SDK + tools + JSONL logger
+├── schema.js             # normalized event/session schema (mirrors ESRC/SSRC)
+├── pricing.js            # RATES table + rateFor()/eventCost()
+└── utils.js              # parseTs, extractText, walkFiles, fmt, …
+
+public/
+├── index.html            # dashboard markup
+├── styles.css            # extracted from build_html <style>
+├── app.js                # fetch + render + tab/filter logic
+└── chart.umd.min.js      # bundled Chart.js 4.4.1
+```
+
+The server maintains an in-memory `state = {events, sessions, memory, settings, scan}` and re-scans affected roots whenever chokidar reports a file change. The browser fetches the JSON over `/api/*` and the dashboard re-renders — no full page reloads.
+
+---
+
+## Requirements
+
+- Node.js ≥ 18
+- Optional: `ANTHROPIC_API_KEY` in `.env` to use `/api/agent` (the dashboard itself works without it)
+
+---
+
+## License
+
+MIT

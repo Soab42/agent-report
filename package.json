@@ -1,0 +1,24 @@
+{
+  "name": "ai-report",
+  "version": "1.0.0",
+  "description": "Unified AI conversation analyzer + interactive dashboard + Claude agent server (Node.js rewrite of claude_analyzer.py + myagent.py)",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "snapshot": "node src/index.js --snapshot"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.30.0",
+    "chokidar": "^3.6.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}
