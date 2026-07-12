@@ -10,11 +10,9 @@ import { promises as fs, existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import { scan, SOURCE_COLORS, SOURCE_LABELS } from './parsers/index.js';
-import { apiRouter, createBroadcaster, filteredEvents, filteredSessions, bounds } from './routes/api.js';
+import { apiRouter, createBroadcaster } from './routes/api.js';
 import { agentRouter } from './routes/agent.js';
 import { htmlRouter } from './routes/html.js';
-import { eventCost, sessionCost } from './pricing.js';
-import { fmt } from './utils.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

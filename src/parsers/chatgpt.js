@@ -2,7 +2,7 @@
 // ChatGPT conversations.json export
 
 import { ev, sess } from '../schema.js';
-import { readJson, extractText, parseTs } from '../utils.js';
+import { readJson, extractText, parseTs, setFirstMessage } from '../utils.js';
 
 export async function parseChatgpt(files) {
   const events = [];
@@ -43,7 +43,7 @@ export async function parseChatgpt(files) {
 
         if (role === 'user') {
           uturn++;
-          if (!s.first_message) s.first_message = text.slice(0, 200);
+          setFirstMessage(s, text);
           events.push(ev({ source: 'chatgpt', t: 'user', ts, sid, len: text.length }));
         } else if (role === 'assistant') {
           aturn++;

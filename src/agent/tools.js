@@ -60,7 +60,8 @@ function runBash(command, timeout = 30) {
   return new Promise((resolve) => {
     let stdout = '', stderr = '', finished = false;
     const proc = spawn('bash', ['-c', command], { cwd: process.cwd() });
-    const timer = setTimeout(() => { if (!finished) { proc.kill('SIGTERM'); } }, timeout * 1000);
+    const timer = setTimeout(() => { if (!finished) proc.kill('SIGTERM'); }, timeout * 1000);
+    timer.unref();
     proc.stdout.on('data', d => stdout += d);
     proc.stderr.on('data', d => stderr += d);
     proc.on('close', (code) => {

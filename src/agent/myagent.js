@@ -2,10 +2,10 @@
 // Agent class wrapping the Anthropic SDK — port of myagent.py Agent.
 
 import Anthropic from '@anthropic-ai/sdk';
-import path from 'node:path';
 import { TOOLS, executeTool } from './tools.js';
 import { SessionLogger } from './logger.js';
 import { randomUUID } from 'node:crypto';
+import { eventCost, noCacheCost } from '../pricing.js';
 
 const DEFAULT_MODEL = process.env.MYAGENT_MODEL || 'claude-opus-4-8';
 const MAX_TOKENS = 8192;
@@ -91,8 +91,8 @@ export class Agent {
 
     this.logger.logLastPrompt(userText);
     if (this.showCost && (usage.inp + usage.out) > 0) {
-      const { estimateCost } = await import('./pricing.js');
-      const [actual, noCache] = estimateCost(this.model, usage);
+      const actual = eventCost({ source: 'claude', model: this.model, ...usage });
+      const noCache = noCacheCost(this.model, usage);
       const crPct = 100 * usage.cr / Math.max(usage.inp + usage.cr, 1);
       console.log(`  💰 Turn cost: $${actual.toFixed(4)} (saved $${(noCache - actual).toFixed(4)} via ${crPct.toFixed(0)}% cache hit)`);
     }

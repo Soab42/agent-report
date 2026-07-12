@@ -1,28 +1,30 @@
 // src/parsers/puku.js
 // Puku CLI: ~/.puku-cli/projects/**/*.jsonl
 
-import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { ev, sess, updateTs } from '../schema.js';
-import { readJsonl, extractText, parseTs, listJsonl } from '../utils.js';
+import {
+  readJsonl, extractText, parseTs, listJsonl,
+  usageFromMessage, contentBlocks, setFirstMessage,
+} from '../utils.js';
 
 export async function parsePuku(root) {
   const events = [];
   const sessions = [];
-  try {
-    await fs.access(root);
-  } catch {
-    return { events, sessions };
-  }
   const files = (await listJsonl(root)).sort();
-  for (const f of files) await parsePukuFile(f, events, sessions);
+  const results = await Promise.all(files.map(f => parsePukuFile(f)));
+  for (const { events: evs, sessions: sessList } of results) {
+    events.push(...evs);
+    sessions.push(...sessList);
+  }
   return { events, sessions };
 }
 
-async function parsePukuFile(fpath, events, sessions) {
+async function parsePukuFile(fpath) {
+  const events = [];
   const recs = [];
   for await (const r of readJsonl(fpath)) recs.push(r);
-  if (!recs.length) return;
+  if (!recs.length) return { events, sessions: [] };
 
   const sid = path.basename(fpath, '.jsonl');
   const s = sess({ source: 'puku', id: sid });
@@ -48,7 +50,7 @@ async function parsePukuFile(fpath, events, sessions) {
       const text = extractText(rec.message?.content ?? '').trim();
       if (text.startsWith('<command-name>') || text.startsWith('<local-command-')) continue;
       uturn++;
-      if (text && !s.first_message) s.first_message = text.slice(0, 200);
+      setFirstMessage(s, text);
       events.push(ev({ source: 'puku', t: 'user', ts, sid, len: text.length, cwd: sCwd, ep: sEp }));
       continue;
     }
@@ -57,35 +59,20 @@ async function parsePukuFile(fpath, events, sessions) {
       const model = msg.model || '';
       if (model && !s.models.includes(model)) s.models.push(model);
 
-      const usage = msg.usage || {};
-      const inp = usage.input_tokens || 0;
-      const out = usage.output_tokens || 0;
-      const cr  = usage.cache_read_input_tokens || 0;
-      const cw  = usage.cache_creation_input_tokens || 0;
+      const { inp, out, cr, cw } = usageFromMessage(msg);
       s.input_tokens  = (s.input_tokens  || 0) + inp;
       s.output_tokens = (s.output_tokens || 0) + out;
       s.cache_read    = (s.cache_read    || 0) + cr;
       s.cache_create  = (s.cache_create  || 0) + cw;
 
       aturn++;
-      const toolsTurn = [];
-      let thinking = 0;
-      for (const blk of (msg.content || [])) {
-        if (!blk || typeof blk !== 'object') continue;
-        const bt = blk.type || '';
-        if (bt === 'tool_use') {
-          const tn = blk.name || 'unknown';
-          toolsTurn.push(tn);
-          s.tools_used[tn] = (s.tools_used[tn] || 0) + 1;
-        } else if (bt === 'thinking') {
-          thinking++;
-          s.thinking_count = (s.thinking_count || 0) + 1;
-        }
-      }
+      const { tools, thinking } = contentBlocks(msg.content);
+      for (const tn of tools) s.tools_used[tn] = (s.tools_used[tn] || 0) + 1;
+      s.thinking_count = (s.thinking_count || 0) + thinking;
       events.push(ev({
         source: 'puku', t: 'assistant', ts, sid,
         inp, out, cr, cw, model,
-        tools: toolsTurn, thinking, cwd: sCwd, ep: sEp,
+        tools, thinking, cwd: sCwd, ep: sEp,
       }));
     }
     // system / queue-operation / file-history-snapshot → ignore
@@ -93,5 +80,6 @@ async function parsePukuFile(fpath, events, sessions) {
   if (!s.models.length) s.models = ['puku-cli'];
   s.user_turns = uturn;
   s.assistant_turns = aturn;
-  if (uturn + aturn > 0) sessions.push(s);
+  const sessions = (uturn + aturn > 0) ? [s] : [];
+  return { events, sessions };
 }

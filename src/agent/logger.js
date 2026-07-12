@@ -4,6 +4,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import { usageFromMessage } from '../utils.js';
 
 export const DEFAULT_LOG_DIR = path.join(os.homedir(), '.myagent', 'projects');
 
@@ -35,11 +36,7 @@ export class SessionLogger {
   }
 
   logAssistant(response) {
-    const u = response.usage || {};
-    const inp = u.input_tokens || 0;
-    const out = u.output_tokens || 0;
-    const cr  = u.cache_read_input_tokens || 0;
-    const cw  = u.cache_creation_input_tokens || 0;
+    const { inp, out, cr, cw } = usageFromMessage(response);
     this.totalInput  += inp;
     this.totalOutput += out;
     this.totalCr     += cr;

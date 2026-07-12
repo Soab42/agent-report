@@ -5,7 +5,7 @@
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
 import { ev, sess, updateTs } from '../schema.js';
-import { readJsonl, extractText, parseTs } from '../utils.js';
+import { readJsonl, extractText, parseTs, setFirstMessage } from '../utils.js';
 
 export async function parseGemini(root) {
   const events = [];
@@ -62,7 +62,7 @@ async function parseGeminiChat(fpath, project, events, sessions) {
     if (rtype === 'user') {
       const text = extractText(rec.content).trim();
       uturn++;
-      if (text && !s.first_message) s.first_message = text.slice(0, 200);
+      setFirstMessage(s, text);
       events.push(ev({ source: 'gemini', t: 'user', ts, sid, len: text.length, cwd: project }));
     } else if (rtype === 'gemini') {
       const text = extractText(rec.content).trim();

@@ -45,13 +45,20 @@ export function eventCost(ev) {
 
 export function sessionCost(s) {
   if (s.source !== 'claude') return null;
-  const m = (s.models && s.models[0]) || '';
-  const r = rateFor(m);
+  const r = rateFor(s.models?.[0]);
   if (!r) return null;
   return (
-    (s.input_tokens || 0) * r.input +
+    (s.input_tokens  || 0) * r.input +
     (s.output_tokens || 0) * r.output +
-    (s.cache_read || 0) * r.cr +
-    (s.cache_create || 0) * r.cw
+    (s.cache_read    || 0) * r.cr +
+    (s.cache_create  || 0) * r.cw
   ) / 1e6;
+}
+
+// Cost if no cache hits at all — used to compute savings.
+export function noCacheCost(model, usage) {
+  const r = rateFor(model);
+  if (!r) return 0;
+  const { inp = 0, out = 0, cr = 0, cw = 0 } = usage || {};
+  return (inp * r.input + out * r.output + cr * r.input + cw * r.cw) / 1e6;
 }

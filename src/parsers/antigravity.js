@@ -4,7 +4,7 @@
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
 import { ev, sess, updateTs } from '../schema.js';
-import { readJsonl, readJson, extractText, parseTs } from '../utils.js';
+import { readJsonl, readJson, extractText, parseTs, setFirstMessage } from '../utils.js';
 
 const AG_TOOL_TYPES = new Set([
   'VIEW_FILE', 'CODE_ACTION', 'RUN_COMMAND', 'GREP_SEARCH', 'LIST_DIRECTORY',
@@ -83,7 +83,7 @@ async function parseAgTranscript(tpath, cid, workspace, events, sessions) {
     if (src === 'USER_EXPLICIT' && rtype === 'USER_INPUT') {
       const text = cleanAg(extractText(rec.content));
       uturn++;
-      if (text && !s.first_message) s.first_message = text.slice(0, 200);
+      setFirstMessage(s, text);
       events.push(ev({ source: 'antigravity', t: 'user', ts, sid: cid, len: text.length, cwd: workspace }));
     } else if (src === 'MODEL' && rtype === 'PLANNER_RESPONSE') {
       const text = extractText(rec.content).trim();

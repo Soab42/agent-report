@@ -3,9 +3,8 @@
 // Wrapped in {timestamp, type, payload:{...}}
 
 import path from 'node:path';
-import { promises as fs } from 'node:fs';
 import { ev, sess, updateTs } from '../schema.js';
-import { readJsonl, extractText, parseTs } from '../utils.js';
+import { readJsonl, extractText, parseTs, listJsonl, setFirstMessage } from '../utils.js';
 
 const CODEX_TOOL_TYPES = new Set(['function_call', 'custom_tool_call', 'local_shell_call']);
 const CODEX_INJECTED = ['<environment_context>', '<permissions instructions>', '<user_instructions>'];
@@ -14,32 +13,20 @@ export async function parseCodex(root) {
   const events = [];
   const sessions = [];
   const sessDir = path.join(root, 'sessions');
-  try {
-    await fs.access(sessDir);
-  } catch {
-    return { events, sessions };
+  const files = (await listJsonl(sessDir)).sort();
+  const results = await Promise.all(files.map(f => parseCodexFile(f)));
+  for (const { events: evs, sessions: ss } of results) {
+    events.push(...evs);
+    sessions.push(...ss);
   }
-
-  const files = [];
-  async function walk(dir) {
-    let ents;
-    try { ents = await fs.readdir(dir, { withFileTypes: true }); } catch { return; }
-    for (const e of ents) {
-      const full = path.join(dir, e.name);
-      if (e.isDirectory()) await walk(full);
-      else if (e.isFile() && e.name.endsWith('.jsonl')) files.push(full);
-    }
-  }
-  await walk(sessDir);
-  files.sort();
-  for (const f of files) await parseCodexFile(f, events, sessions);
   return { events, sessions };
 }
 
-async function parseCodexFile(fpath, events, sessions) {
+async function parseCodexFile(fpath) {
+  const events = [];
   const recs = [];
   for await (const r of readJsonl(fpath)) recs.push(r);
-  if (!recs.length) return;
+  if (!recs.length) return { events, sessions: [] };
 
   let sid = path.basename(fpath, '.jsonl');
   const s = sess({ source: 'codex', id: sid });
@@ -78,7 +65,7 @@ async function parseCodexFile(fpath, events, sessions) {
       if (role === 'user') {
         if (CODEX_INJECTED.some(prefix => text.startsWith(prefix))) continue;
         uturn++;
-        if (text && !s.first_message) s.first_message = text.slice(0, 200);
+        setFirstMessage(s, text);
         events.push(ev({ source: 'codex', t: 'user', ts, sid, len: text.length, cwd: cwdNow }));
       } else if (role === 'assistant') {
         aturn++;
@@ -97,5 +84,6 @@ async function parseCodexFile(fpath, events, sessions) {
   if (!s.models.length) s.models = ['codex'];
   s.user_turns = uturn;
   s.assistant_turns = aturn;
-  if (uturn + aturn > 0) sessions.push(s);
+  const sessions = (uturn + aturn > 0) ? [s] : [];
+  return { events, sessions };
 }

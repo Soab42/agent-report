@@ -6,6 +6,33 @@ import { createReadStream } from 'node:fs';
 import { createInterface } from 'node:readline';
 import path from 'node:path';
 
+// Anthropic-shape usage extraction shared by Claude + Puku parsers and the SDK logger.
+export function usageFromMessage(msg) {
+  const u = (msg && msg.usage) || {};
+  return {
+    inp: u.input_tokens || 0,
+    out: u.output_tokens || 0,
+    cr:  u.cache_read_input_tokens || 0,
+    cw:  u.cache_creation_input_tokens || 0,
+  };
+}
+
+// Tool-use / thinking counters from an Anthropic-shape content block array.
+export function contentBlocks(content) {
+  const tools = [];
+  let thinking = 0;
+  for (const blk of (content || [])) {
+    if (!blk || typeof blk !== 'object') continue;
+    if (blk.type === 'tool_use') tools.push(blk.name || 'unknown');
+    else if (blk.type === 'thinking') thinking++;
+  }
+  return { tools, thinking };
+}
+
+export function setFirstMessage(session, text) {
+  if (text && !session.first_message) session.first_message = text.slice(0, 200);
+}
+
 export function parseTs(ts) {
   if (ts == null) return null;
   try {
@@ -93,8 +120,7 @@ export async function walkFiles(dir, predicate, acc = []) {
   for (const e of entries) {
     const full = path.join(dir, e.name);
     if (e.isDirectory()) {
-      // skip noisy directories
-      if (e.name === 'node_modules' || e.name.startsWith('.')) continue;
+      if (e.name === 'node_modules' || e.name === 'dist' || e.name === 'build' || e.name.startsWith('.')) continue;
       await walkFiles(full, predicate, acc);
     } else if (e.isFile()) {
       if (predicate(full, e.name)) acc.push(full);
