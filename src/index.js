@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 // src/index.js
 // Express server: serves the dashboard, JSON APIs, and SSE updates.
 

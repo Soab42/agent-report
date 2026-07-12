@@ -1,9 +1,18 @@
 {
-  "name": "ai-report",
-  "version": "1.0.0",
-  "description": "Unified AI conversation analyzer + interactive dashboard + Claude agent server (Node.js rewrite of claude_analyzer.py + myagent.py)",
+  "name": "ailense",
+  "version": "0.1.0",
+  "description": "Unified dashboard for AI conversation logs (Claude, Gemini, Codex, Puku, ChatGPT, Antigravity) + built-in MyAgent server",
   "type": "module",
   "main": "src/index.js",
+  "bin": {
+    "ailense": "./src/index.js"
+  },
+  "files": [
+    "src",
+    "public",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
@@ -12,6 +21,29 @@
   "engines": {
     "node": ">=18"
   },
+  "keywords": [
+    "ai",
+    "claude",
+    "gemini",
+    "codex",
+    "chatgpt",
+    "antigravity",
+    "puku",
+    "analyzer",
+    "dashboard",
+    "agent",
+    "anthropic"
+  ],
+  "author": "soab",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/soab/ailense.git"
+  },
+  "bugs": {
+    "url": "https://github.com/soab/ailense/issues"
+  },
+  "homepage": "https://github.com/soab/ailense#readme",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.30.0",
     "chokidar": "^3.6.0",

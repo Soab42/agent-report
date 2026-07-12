@@ -6,4 +6,4 @@ dist/
 report.html
 report-*.html
 ai-report*.html
-*.tmp
+*.tmppnpm-lock.yaml

@@ -22,9 +22,28 @@ This is a Node.js rewrite of the original Python `claude_analyzer.py` + `myagent
 
 ## Quick start
 
+### Run with npx (no clone required)
+
 ```bash
-git clone <this-repo>
-cd <this-repo>
+npx ailense                      # starts on http://localhost:4310
+npx ailense --port 8080          # custom port
+npx ailense --snapshot report.html  # write a self-contained HTML and exit
+```
+
+`npx` downloads the package + its dependencies into a temp cache on first run, then executes the `ailense` bin. Subsequent runs use the cache.
+
+### Or install globally
+
+```bash
+npm install -g ailense
+ailense                          # same flags as above
+```
+
+### Or clone and run from source
+
+```bash
+git clone https://github.com/soab/ailense
+cd ailense
 npm install
 cp .env.example .env             # add your ANTHROPIC_API_KEY (optional)
 npm start                        # or: node src/index.js
@@ -35,7 +54,7 @@ Then open <http://localhost:4310>.
 For a single offline HTML file (no server):
 
 ```bash
-node src/index.js --snapshot report.html
+ailense --snapshot report.html
 xdg-open report.html             # or just open in any browser
 ```
 
@@ -64,11 +83,15 @@ Disable a source with `--no-claude`, `--no-gemini`, `--no-antigravity`, `--no-co
 ## CLI flags
 
 ```text
-node src/index.js                       # start server on $PORT or 4310
-node src/index.js --port 8080           # custom port
-node src/index.js --snapshot r.html     # write self-contained HTML report, exit
-node src/index.js --no-watch            # disable file watcher
-node src/index.js --verbose             # verbose source listing
+ailense                                # start server on $PORT or 4310
+ailense --port 8080                    # custom port
+ailense --snapshot r.html              # write self-contained HTML report, exit
+ailense --no-watch                     # disable file watcher
+ailense --verbose                      # verbose source listing
+ailense --path /extra/root             # add extra Claude root to scan + watch
+ailense --chatgpt FILE                 # path to a ChatGPT conversations.json
+ailense --no-claude                    # disable a specific source
+                                        # (--no-gemini, --no-antigravity, --no-codex, --no-puku)
 ```
 
 ---
