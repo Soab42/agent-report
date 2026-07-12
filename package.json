@@ -5,7 +5,7 @@
   "type": "module",
   "main": "src/index.js",
   "bin": {
-    "ailense": "./src/index.js"
+    "ailense": "src/index.js"
   },
   "files": [
     "src",
