@@ -66,6 +66,30 @@ xdg-open report.html             # or just open in any browser
 
 ---
 
+## Publishing (maintainers)
+
+Pushes of tags matching `v*` (e.g. `v0.1.4`) automatically publish to npm via GitHub Actions (`.github/workflows/publish.yml`).
+
+```bash
+# 1. make changes, commit
+git commit -am "feat: ..."
+
+# 2. bump version + create a matching tag
+npm version patch                # → 0.1.4, also creates git tag v0.1.4
+
+# 3. push the tag
+git push origin main --follow-tags
+```
+
+The workflow uses `NPM_TOKEN` (a granular publish token) from repo secrets. To set it up:
+
+1. npmjs.com → Access Tokens → **Generate New Token** → **Granular** → permissions: *Packages: Read & Write*, scope: *ailense*.
+2. GitHub → repo → Settings → Secrets and variables → Actions → New repository secret → name `NPM_TOKEN`, paste the token.
+
+You can also trigger a publish manually from the Actions tab using **Run workflow**.
+
+---
+
 ## Where to find things
 
 | Thing | Where |
