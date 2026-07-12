@@ -1,6 +1,12 @@
 # AI Tools Analyzer — Node.js
 
-Unified dashboard for analyzing AI conversation history across multiple tools:
+> Unified dashboard for every AI conversation you've ever had, running locally in one command.
+
+[![npm](https://img.shields.io/npm/v/ailense)](https://www.npmjs.com/package/ailense)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![Node ≥ 18](https://img.shields.io/badge/node-%E2%89%A518-339933)]()
+
+Scans your local AI conversation history across six tools and renders a live, auto-refreshing dashboard with cost breakdowns, tools/models/project analytics, and a built-in Claude agent server:
 
 - **Claude Desktop** (Cowork) + **Claude Code CLI**
 - **Gemini CLI**
@@ -11,7 +17,7 @@ Unified dashboard for analyzing AI conversation history across multiple tools:
 
 Plus a built-in **MyAgent** server: an Anthropic-API-powered CLI agent with prompt caching and tool execution.
 
-This is a Node.js rewrite of the original Python `claude_analyzer.py` + `myagent.py`. Same data, same dashboard, but:
+This is the Node.js rewrite of the original Python `claude_analyzer.py` + `myagent.py`. Same data, same dashboard, but:
 
 - Serves a live dashboard on `http://localhost:4310` (auto-refreshing via SSE)
 - Exposes all data as JSON APIs (`/api/kpis`, `/api/sessions`, `/api/cost`, …)
@@ -42,8 +48,8 @@ ailense                          # same flags as above
 ### Or clone and run from source
 
 ```bash
-git clone https://github.com/soab/ailense
-cd ailense
+git clone https://github.com/Soab42/agent-report.git
+cd agent-report
 npm install
 cp .env.example .env             # add your ANTHROPIC_API_KEY (optional)
 npm start                        # or: node src/index.js
@@ -57,6 +63,20 @@ For a single offline HTML file (no server):
 ailense --snapshot report.html
 xdg-open report.html             # or just open in any browser
 ```
+
+---
+
+## Where to find things
+
+| Thing | Where |
+|---|---|
+| Source | <https://github.com/Soab42/agent-report> |
+| npm package | <https://www.npmjs.com/package/ailense> |
+| Issues | <https://github.com/Soab42/agent-report/issues> |
+| License | [MIT](./LICENSE) |
+
+---
+
 
 ---
 

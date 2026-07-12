@@ -1,6 +1,6 @@
 {
   "name": "ailense",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Unified dashboard for AI conversation logs (Claude, Gemini, Codex, Puku, ChatGPT, Antigravity) + built-in MyAgent server",
   "type": "module",
   "main": "src/index.js",
@@ -38,12 +38,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/soab/ailense.git"
+    "url": "git+https://github.com/Soab42/agent-report.git"
   },
   "bugs": {
-    "url": "https://github.com/soab/ailense/issues"
+    "url": "https://github.com/Soab42/agent-report/issues"
   },
-  "homepage": "https://github.com/soab/ailense#readme",
+  "homepage": "https://github.com/Soab42/agent-report#readme",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.30.0",
     "chokidar": "^3.6.0",
