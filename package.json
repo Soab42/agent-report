@@ -1,6 +1,6 @@
 {
   "name": "ailense",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Unified dashboard for AI conversation logs (Claude, Gemini, Codex, Puku, ChatGPT, Antigravity) + built-in MyAgent server",
   "type": "module",
   "main": "src/index.js",
