@@ -222,7 +222,9 @@ async function main() {
       clearTimeout(debounce);
       debounce = setTimeout(() => refresh(filePath).catch(e => console.error('Refresh error:', e)), 800);
     };
-    watcher.on('add', onChange).on('change', onChange).on('unlink', onChange);
+    watcher
+      .on('add', onChange).on('change', onChange).on('unlink', onChange)
+      .on('error', (e) => console.error(`  ⚠ Watcher error (ignored): ${e.message}`));
     console.log(`\n👁  Watching ${existing.length} root(s) for changes…\n`);
 
     process.on('SIGINT', () => {
