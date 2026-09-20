@@ -72,7 +72,7 @@ export async function parseClaude(roots) {
   const events = [];
   const sd = new Map();
   for (const { events: evs, sessions: ss } of results) {
-    events.push(...evs);
+    for (const e of evs) events.push(e);
     for (const s of ss) {
       const cur = sd.get(s.id);
       if (cur) mergeSession(cur, s);

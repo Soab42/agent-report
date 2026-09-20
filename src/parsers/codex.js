@@ -16,8 +16,8 @@ export async function parseCodex(root) {
   const files = (await listJsonl(sessDir)).sort();
   const results = await Promise.all(files.map(f => parseCodexFile(f)));
   for (const { events: evs, sessions: ss } of results) {
-    events.push(...evs);
-    sessions.push(...ss);
+    for (const e of evs) events.push(e);
+    for (const s of ss) sessions.push(s);
   }
   return { events, sessions };
 }

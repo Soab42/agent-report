@@ -45,6 +45,7 @@ function parseArgs(argv) {
     else if (a === '--no-antigravity') args.noAntigravity = true;
     else if (a === '--no-codex')       args.noCodex = true;
     else if (a === '--no-puku')        args.noPuku = true;
+    else if (a === '--no-opencode')    args.noOpencode = true;
   }
   return args;
 }
@@ -61,7 +62,7 @@ Usage:
   node src/index.js --path /extra/root    # add extra Claude root to scan + watch
   node src/index.js --chatgpt FILE        # path to a ChatGPT conversations.json
   node src/index.js --no-claude           # disable a specific source
-                                           # (--no-gemini, --no-antigravity, --no-codex, --no-puku)
+                                           # (--no-gemini, --no-antigravity, --no-codex, --no-puku, --no-opencode)
 
 Endpoints:
   GET  /                  → dashboard (HTML)
@@ -163,6 +164,7 @@ async function main() {
   if (args.noAntigravity) include.antigravity = false;
   if (args.noCodex)       include.codex = false;
   if (args.noPuku)        include.puku = false;
+  if (args.noOpencode)    include.opencode = false;
 
   let state = await scan({ verbose: args.verbose, include });
   if (!state.events.length) {
@@ -193,6 +195,7 @@ async function main() {
       path.join(home, '.gemini'),
       path.join(home, '.codex'),
       path.join(home, '.puku-cli'),
+      path.join(home, '.local', 'share', 'opencode', 'opencode.db'),
       path.join(home, 'Downloads'),
       path.join(home, 'Desktop'),
       path.join(home, 'Documents'),

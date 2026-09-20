@@ -10,6 +10,7 @@ import { parseAntigravity } from './antigravity.js';
 import { parseChatgpt } from './chatgpt.js';
 import { parseCodex } from './codex.js';
 import { parsePuku } from './puku.js';
+import { parseOpencode } from './opencode.js';
 import { findMemoryFiles, analyzeMemory } from './memory.js';
 import { analyzeSettings } from './settings.js';
 
@@ -20,6 +21,7 @@ export const SOURCE_COLORS = {
   chatgpt:     '#10a37f',
   codex:       '#f97316',
   puku:        '#e879f9',
+  opencode:    '#22c55e',
 };
 export const SOURCE_LABELS = {
   claude:      'Claude',
@@ -28,6 +30,7 @@ export const SOURCE_LABELS = {
   chatgpt:     'ChatGPT',
   codex:       'Codex',
   puku:        'Puku CLI',
+  opencode:    'OpenCode',
 };
 
 function log(line) {
@@ -112,6 +115,14 @@ async function resolveSource(name, include, home) {
             run: () => parsePuku(root) }
         : { missing: '🩷 Puku CLI: ~/.puku-cli/projects/ not found' };
     }
+    case 'opencode': {
+      const dbPath = path.join(home, '.local', 'share', 'opencode', 'opencode.db');
+      return (await dirExists(dbPath))
+        ? { label: `🟢 OpenCode: scanning ${dbPath} …`,
+            sub: dbPath, path: dbPath,
+            run: () => parseOpencode(dbPath) }
+        : { missing: '🟢 OpenCode: ~/.local/share/opencode/opencode.db not found' };
+    }
   }
   return null;
 }
@@ -122,7 +133,7 @@ export async function scan({ verbose = false, include = {} } = {}) {
   const allSessions = [];
   const scanInfo = { sources: {} };
 
-  const sourceNames = ['claude', 'gemini', 'antigravity', 'chatgpt', 'codex', 'puku'];
+  const sourceNames = ['claude', 'gemini', 'antigravity', 'chatgpt', 'codex', 'puku', 'opencode'];
   const enabled = sourceNames.filter(n => include[n] !== false);
 
   // Resolve every source's roots and emit logs up front, in deterministic order.
@@ -181,8 +192,8 @@ export async function scan({ verbose = false, include = {} } = {}) {
   ]);
 
   for (const { name, events, sessions, path } of parseResults) {
-    allEvents.push(...events);
-    allSessions.push(...sessions);
+    for (const e of events) allEvents.push(e);
+    for (const s of sessions) allSessions.push(s);
     scanInfo.sources[name] = { events: events.length, sessions: sessions.length, path };
   }
 

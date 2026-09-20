@@ -14,8 +14,8 @@ export async function parsePuku(root) {
   const files = (await listJsonl(root)).sort();
   const results = await Promise.all(files.map(f => parsePukuFile(f)));
   for (const { events: evs, sessions: sessList } of results) {
-    events.push(...evs);
-    sessions.push(...sessList);
+    for (const e of evs) events.push(e);
+    for (const s of sessList) sessions.push(s);
   }
   return { events, sessions };
 }

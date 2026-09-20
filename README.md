@@ -4,9 +4,9 @@
 
 [![npm](https://img.shields.io/npm/v/ailense)](https://www.npmjs.com/package/ailense)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-[![Node ≥ 18](https://img.shields.io/badge/node-%E2%89%A518-339933)]()
+[![Node ≥ 22.5](https://img.shields.io/badge/node-%E2%89%A522.5-339933)]()
 
-Scans your local AI conversation history across six tools and renders a live, auto-refreshing dashboard with cost breakdowns, tools/models/project analytics, and a built-in Claude agent server:
+Scans your local AI conversation history across seven tools and renders a live, auto-refreshing dashboard with cost breakdowns, tools/models/project analytics, and a built-in Claude agent server:
 
 - **Claude Desktop** (Cowork) + **Claude Code CLI**
 - **Gemini CLI**
@@ -14,6 +14,7 @@ Scans your local AI conversation history across six tools and renders a live, au
 - **ChatGPT** exports
 - **Codex CLI**
 - **Puku CLI**
+- **OpenCode CLI**
 
 Plus a built-in **MyAgent** server: an Anthropic-API-powered CLI agent with prompt caching and tool execution.
 
@@ -117,10 +118,11 @@ The parser auto-detects these paths on your machine:
 | ChatGPT export | `~/Downloads/conversations.json`, `~/Desktop/conversations.json`, `~/Documents/conversations.json` (or pass `--chatgpt <file>`) |
 | Codex CLI | `~/.codex/sessions/<YYYY>/<MM>/<DD>/rollout-*.jsonl` |
 | Puku CLI | `~/.puku-cli/projects/**/*.jsonl` |
+| OpenCode CLI | `~/.local/share/opencode/opencode.db` (sqlite) |
 | Memory files | `*.md` with `type: user|feedback|project|reference` frontmatter under Claude/Codex roots |
 | Settings | `settings.json`, `settings.local.json`, `.claude.json` |
 
-Disable a source with `--no-claude`, `--no-gemini`, `--no-antigravity`, `--no-codex`, or `--no-puku`.
+Disable a source with `--no-claude`, `--no-gemini`, `--no-antigravity`, `--no-codex`, `--no-puku`, or `--no-opencode`.
 
 ---
 
@@ -205,7 +207,7 @@ The server maintains an in-memory `state = {events, sessions, memory, settings, 
 
 ## Requirements
 
-- Node.js ≥ 18
+- Node.js ≥ 22.5 (uses built-in `node:sqlite` to read OpenCode's database)
 - Optional: `ANTHROPIC_API_KEY` in `.env` to use `/api/agent` (the dashboard itself works without it)
 
 ---
